@@ -59,10 +59,29 @@ namespace StockPredictor
 
         public TFTensor Think(TFTensor inputs)
         {
-            TFTensor outputs = inputs;
+            TFTensor previousLayerOutput = inputs;
+
+            //Feed Forward through each layer in the network
+            for (int i = 0; i < Weights.Count; i++)
+            {
+                using (TFGraph graph = new TFGraph())
+                {
+                    TFSession session = new TFSession(graph);
+
+                    TFOutput layerinputs = graph.Const(previousLayerOutput); //The inputs to this layer are the outputs from the previous layer.
+                    TFOutput layerweights = graph.Const(Weights[i]); //Get the weights for this layer.
+                    TFOutput biases = graph.Const(Biases[i]); //Get the biases for this layer.
+
+                    //Matrix Multiply the weights and inputs, then add the biases.
+                    TFOutput layerOutput = graph.Add(graph.MatMul(layerweights, layerinputs), biases);
+
+                    //Get the tensor to feed to the next layer
+                    previousLayerOutput = session.GetRunner().Run(layerOutput);
+                }
+            }
 
 
-            return outputs;
+            return previousLayerOutput;
         }
 
         public void Train()
