@@ -85,12 +85,15 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="NeuralNetwork.cs" />
     <Compile Include="StockPredictor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\TensorFlowSharp.1.8.0-pre1\build\net45\TensorFlowSharp.targets" Condition="Exists('..\packages\TensorFlowSharp.1.8.0-pre1\build\net45\TensorFlowSharp.targets')" />

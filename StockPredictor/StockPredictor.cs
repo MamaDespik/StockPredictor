@@ -97,6 +97,10 @@ namespace StockPredictor
 
             TFGraph graph = new TFGraph();
 
+            TFSession session = new TFSession(graph);
+
+            //session.GetRunner().AddInput() //Bad
+
 
             #endregion
 
