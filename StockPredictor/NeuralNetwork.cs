@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -15,42 +16,63 @@ namespace StockPredictor
 
         private List<TFTensor> Weights;
         private List<TFTensor> Biases;
+        private Random Random = new Random(0);
+        private int Scale = 1;
 
         #endregion
 
         #region Constructors
 
-        public NeuralNetwork(int numInputs, int numOutputs, List<int> numHiddenLayers)
+        public NeuralNetwork(int numInputNodes, int numOutputNodes, List<int> numHiddenNodesPerLayer)
         {
             Weights = new List<TFTensor>();
             Biases = new List<TFTensor>();
 
-            long previousLayerDepth = numInputs;
-            long[] dims;
-            int size;
+            int numPreviousLayerNodes = numInputNodes;
+            long[] matrixShape;
+            int matrixDataSize;
+            List<float[]> rows;
+            float value;
             TFTensor tempTensor;
 
-            foreach (int layerDepth in numHiddenLayers)
+            foreach (int numHiddenNodes in numHiddenNodesPerLayer)
             {
-                dims = new[] { previousLayerDepth, layerDepth };
-                size = (int)(previousLayerDepth * layerDepth * 4);
-                tempTensor = new TFTensor(TFDataType.Float, dims, size);
-                Weights.Add(tempTensor);
+                //Add the matrix that represents the weights from each node of the previous layer to each node in this layer to the list of weights
+                // matrixShape = new long[] { numPreviousLayerNodes, numHiddenNodes };
+                // matrixDataSize = (int)(matrixShape[0] * matrixShape[1] * 4);//4 bytes per float in the matrix
+                // tempTensor = new TFTensor(TFDataType.Float, matrixShape, matrixDataSize);
+                // Weights.Add(tempTensor);
+                rows = new List<float[]>();
+                for (int i = 0; i < numHiddenNodes; i++)
+                {
+                    value = Convert.ToSingle((Random.NextDouble() - .5) * Scale);
+                    rows.Add(new List<float>(Enumerable.Range(0, numPreviousLayerNodes).Select(n => value)).ToArray());
+                }
+                Weights.Add(new TFTensor(rows.ToArray()));
 
-                tempTensor = new TFTensor(new List<float>(layerDepth).ToArray());
-                Biases.Add(tempTensor);
+                //Add the 1D array that represents the biases for each node in this layer to the list of biases
+                value = Convert.ToSingle((Random.NextDouble() - .5) * Scale);
+                Biases.Add(new TFTensor(new List<float>(Enumerable.Range(0, numHiddenNodes).Select(n => value)).ToArray()));
 
-                previousLayerDepth = layerDepth;
+                numPreviousLayerNodes = numHiddenNodes;
             }
 
-            dims = new[] { previousLayerDepth, numOutputs };
-            size = (int)(previousLayerDepth * numOutputs * 4);
-            tempTensor = new TFTensor(TFDataType.Float, dims, size);
-            Weights.Add(tempTensor);
+            //Add the matrix that represents the weights from each input to each node in this layer to the list of weights
+            //matrixShape = new long[] { numPreviousLayerNodes, numOutputNodes };
+            //matrixDataSize = (numPreviousLayerNodes * numOutputNodes * 4);
+            //tempTensor = new TFTensor(TFDataType.Float, matrixShape, matrixDataSize);
+            //Weights.Add(tempTensor);
+            rows = new List<float[]>();
+            for (int i = 0; i < numOutputNodes; i++)
+            {
+                value = Convert.ToSingle((Random.NextDouble() - .5) * Scale);
+                rows.Add(new List<float>(Enumerable.Range(0, numPreviousLayerNodes).Select(n => value)).ToArray());
+            }
+            Weights.Add(new TFTensor(rows.ToArray()));
 
-            tempTensor = new TFTensor(new List<float>(numOutputs).ToArray());
-            Biases.Add(tempTensor);
-
+            //Add the 1D array that represents the biases for each node in this layer to the list of biases
+            value = Convert.ToSingle((Random.NextDouble() - .5) * Scale);
+            Biases.Add(new TFTensor(new List<float>(Enumerable.Range(0, numOutputNodes).Select(n => value)).ToArray()));
         }
 
         #endregion
