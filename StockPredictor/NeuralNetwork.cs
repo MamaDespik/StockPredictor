@@ -36,54 +36,38 @@ namespace StockPredictor
             float value;
             TFTensor tempTensor;
 
+            //Weights/biases from inputs to first hidden layer, then each hidden layer to the next
             foreach (int numHiddenNodes in numHiddenNodesPerLayer)
             {
                 //Add the matrix that represents the weights from each node of the previous layer to each node in this layer to the list of weights
-                // matrixShape = new long[] { numPreviousLayerNodes, numHiddenNodes };
-                // matrixDataSize = (int)(matrixShape[0] * matrixShape[1] * 4);//4 bytes per float in the matrix
-                // tempTensor = new TFTensor(TFDataType.Float, matrixShape, matrixDataSize);
-                // Weights.Add(tempTensor);
                 weightRows = new List<float[]>();
                 biasRows = new List<float[]>();
                 for (int i = 0; i < numHiddenNodes; i++)
                 {
-                    value = Convert.ToSingle((Random.NextDouble() - .5) * Scale);
+                    value = Convert.ToSingle((Random.NextDouble()) * Scale);
                     weightRows.Add(new List<float>(Enumerable.Range(0, numPreviousLayerNodes).Select(n => value)).ToArray());
-                    value = Convert.ToSingle((Random.NextDouble() - .5) * Scale);
+                    value = Convert.ToSingle((Random.NextDouble()) * Scale);
                     biasRows.Add(new List<float>(Enumerable.Range(0, 1).Select(n => value)).ToArray());
-                    
+
                 }
                 Weights.Add(new TFTensor(weightRows.ToArray()));
                 Biases.Add(new TFTensor(biasRows.ToArray()));
 
-                //Add the 1D array that represents the biases for each node in this layer to the list of biases
-                //value = Convert.ToSingle((Random.NextDouble() - .5) * Scale);
-                //List<float> test = new List<float>(Enumerable.Range(0, numHiddenNodes).Select(n => value));
-                //Biases.Add(new TFTensor(test.ToArray()));
-
                 numPreviousLayerNodes = numHiddenNodes;
             }
 
-            //Add the matrix that represents the weights from each input to each node in this layer to the list of weights
-            //matrixShape = new long[] { numPreviousLayerNodes, numOutputNodes };
-            //matrixDataSize = (numPreviousLayerNodes * numOutputNodes * 4);
-            //tempTensor = new TFTensor(TFDataType.Float, matrixShape, matrixDataSize);
-            //Weights.Add(tempTensor);
+            //Weights/Biases from last hidden layer to output
             weightRows = new List<float[]>();
             biasRows = new List<float[]>();
             for (int i = 0; i < numOutputNodes; i++)
             {
-                value = Convert.ToSingle((Random.NextDouble() - .5) * Scale);
+                value = Convert.ToSingle((Random.NextDouble()) * Scale);
                 weightRows.Add(new List<float>(Enumerable.Range(0, numPreviousLayerNodes).Select(n => value)).ToArray());
-                value = Convert.ToSingle((Random.NextDouble() - .5) * Scale);
+                value = Convert.ToSingle((Random.NextDouble()) * Scale);
                 biasRows.Add(new List<float>(Enumerable.Range(0, 1).Select(n => value)).ToArray());
             }
             Weights.Add(new TFTensor(weightRows.ToArray()));
             Biases.Add(new TFTensor(biasRows.ToArray()));
-
-            //Add the 1D array that represents the biases for each node in this layer to the list of biases
-            //value = Convert.ToSingle((Random.NextDouble() - .5) * Scale);
-            //Biases.Add(new TFTensor(new List<float>(Enumerable.Range(0, numOutputNodes).Select(n => value)).ToArray()));
         }
 
         #endregion
@@ -99,17 +83,18 @@ namespace StockPredictor
             {
                 using (TFGraph graph = new TFGraph())
                 {
-                    TFSession session = new TFSession(graph);
                     TFOutput layerinputs = graph.Const(previousLayerOutput); //The inputs to this layer are the outputs from the previous layer.
                     TFOutput layerweights = graph.Const(Weights[i]); //Get the weights for this layer.
                     TFOutput biases = graph.Const(Biases[i]); //Get the biases for this layer.
 
-                    //Matrix Multiply the weights and inputs, then add the biases.
-                    TFOutput product = graph.MatMul(layerweights, layerinputs);
-                    TFOutput layerOutput = graph.Add(product, biases);
+                    //Matrix Multiply the weights and inputs, then add the biases, then relu.
+                    TFOutput inputsTimesWeights = graph.MatMul(layerweights, layerinputs);
+                    TFOutput biasesAdded = graph.Add(inputsTimesWeights, biases);
+                    TFOutput activation = graph.Relu(biasesAdded);
 
                     //Get the tensor to feed to the next layer
-                    previousLayerOutput = session.GetRunner().Run(layerOutput);
+                    TFSession session = new TFSession(graph);
+                    previousLayerOutput = session.GetRunner().Run(activation);
                 }
             }
 
@@ -117,9 +102,23 @@ namespace StockPredictor
             return previousLayerOutput;
         }
 
-        public void Train()
+        public void Train(List<TFTensor> inputs, List<TFTensor> expectedOutputs, int numEpochs)
         {
-
+            for (int i = 0; i < numEpochs; i++)
+            {
+                int test = Random.Next(0, inputs.Count);
+                TFTensor expectedOutput = expectedOutputs[test];
+                TFTensor actualOutput = Think(inputs[test]);
+                TFTensor error;
+                using (TFGraph graph = new TFGraph())
+                {
+                    TFOutput expected = graph.Const(expectedOutput);
+                    TFOutput actual = graph.Const(actualOutput);
+                    TFOutput errorOutput = graph.Sub(expected, actual);
+                    TFSession session = new TFSession(graph);
+                    error = session.GetRunner().Run(errorOutput);
+                }
+            }
         }
 
 
