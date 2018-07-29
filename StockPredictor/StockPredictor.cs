@@ -7,6 +7,7 @@ using TensorFlow;
 using static AlphaVantageApiWrapper.AlphaVantageApiWrapper;
 using static VantageKey.VantageKey;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace StockPredictor
 {
@@ -15,8 +16,8 @@ namespace StockPredictor
         const string VANTAGE_KEY = VantageKey.VantageKey.ValueType;
         static void Main(string[] args)
         {
-
             #region Fetch Data
+            /*
             List<ApiParam> parameters = new List<ApiParam>();
             parameters.Add(new ApiParam("function", "TIME_SERIES_DAILY"));
             parameters.Add(new ApiParam("symbol", "MSFT"));
@@ -79,7 +80,7 @@ namespace StockPredictor
             {
                 testingInputs.Add(dataset.GetRange(0, groupSize - 1));
                 //If today's value is less than tomorrows, buy don't sell.  Otherwise, don't buy sell
-                List<double> expectedOutput = dataset[groupSize - 2] < dataset[groupSize - 1] ? 
+                List<double> expectedOutput = dataset[groupSize - 2] < dataset[groupSize - 1] ?
                     new List<double> { 1, 0 } : new List<double> { 0, 1 };
                 testingExpectedOutputs.Add(expectedOutput);
             }
@@ -90,17 +91,23 @@ namespace StockPredictor
             TFTensor testingInputsTensor = GetTensorFromData(testingInputs);
             TFTensor testingExpectedOutputsTensor = GetTensorFromData(testingExpectedOutputs);
 
-
+*/
             #endregion
-
+            
             #region Create NN
 
-            TFGraph graph = new TFGraph();
+            //TFGraph graph = new TFGraph();
 
-            TFSession session = new TFSession(graph);
+            //TFSession session = new TFSession(graph);
 
             //session.GetRunner().AddInput() //Bad
+            NeuralNetwork nn = new NeuralNetwork(2, 1, new List<int> { 3 });
+            TFTensor outputs = nn.Think(new TFTensor(new float[,] { { 1}, { 2}}));
 
+            float[] data = { 1};
+            Marshal.Copy(outputs.Data, data, 0, 1);
+
+            Console.WriteLine("Data: " + data[0]);
 
             #endregion
 
@@ -116,7 +123,7 @@ namespace StockPredictor
         public static TFTensor GetTensorFromData(List<List<double>> data)
         {
             List<double[]> tempList = new List<double[]>();
-            foreach (List<double> subSet in data)tempList.Add(subSet.ToArray());
+            foreach (List<double> subSet in data) tempList.Add(subSet.ToArray());
             double[][] arrayData = tempList.ToArray();
             return new TFTensor(arrayData);
         }
